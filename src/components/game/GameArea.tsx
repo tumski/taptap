@@ -6,7 +6,7 @@ import { ScoreDisplay } from './ScoreDisplay';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { useGameState } from '../../hooks/useGameState';
 import { useTouchHandler } from '../../hooks/useTouchHandler';
-import { LANE_POSITIONS, HIT_ZONE_HEIGHT, CIRCLE_SIZE } from '../../utils/constants';
+import { LANE_POSITIONS } from '../../utils/constants';
 import styles from './GameArea.module.css';
 
 interface GameAreaProps {
@@ -70,15 +70,13 @@ export function GameArea({ onGameOver }: GameAreaProps) {
     (lane: number) => {
       if (state.isGameOver || areaHeight === 0) return;
 
-      const hitZoneTop = areaHeight - HIT_ZONE_HEIGHT - CIRCLE_SIZE;
-      const hitZoneBottom = areaHeight;
+      // Pass 0 as hitZoneTop (any visible circle can be hit) and areaHeight as the boundary
+      handleHit(0, lane, 0, areaHeight);
 
-      handleHit(0, lane, hitZoneTop, hitZoneBottom);
-
-      // Show tap feedback
+      // Show tap feedback at tap location
       const x = LANE_POSITIONS[lane] * 100;
       const id = ++tapIdRef.current;
-      setTapFeedback({ x, y: areaHeight - HIT_ZONE_HEIGHT / 2, id });
+      setTapFeedback({ x, y: areaHeight * 0.7, id });
       setTimeout(() => {
         setTapFeedback((prev) => (prev?.id === id ? null : prev));
       }, 200);
@@ -100,12 +98,6 @@ export function GameArea({ onGameOver }: GameAreaProps) {
       {LANE_POSITIONS.map((pos, i) => (
         <Lane key={i} position={pos} />
       ))}
-
-      {/* Hit zone indicator */}
-      <div
-        className={styles.hitZone}
-        style={{ height: HIT_ZONE_HEIGHT }}
-      />
 
       {/* Falling circles */}
       {player.circles.map((circle) => (

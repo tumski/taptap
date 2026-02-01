@@ -5,7 +5,7 @@ import { LivesDisplay } from './LivesDisplay';
 import { ScoreDisplay } from './ScoreDisplay';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { useGameState } from '../../hooks/useGameState';
-import { LANE_POSITIONS, HIT_ZONE_HEIGHT, CIRCLE_SIZE } from '../../utils/constants';
+import { LANE_POSITIONS } from '../../utils/constants';
 import styles from './TwoPlayerGameArea.module.css';
 
 interface TwoPlayerGameAreaProps {
@@ -76,10 +76,8 @@ export function TwoPlayerGameArea({ onGameOver }: TwoPlayerGameAreaProps) {
       const relativeX = (clientX - containerRect.left) / containerRect.width;
       const lane = relativeX < 0.5 ? 0 : 1;
 
-      const hitZoneTop = areaHeight - HIT_ZONE_HEIGHT - CIRCLE_SIZE;
-      const hitZoneBottom = areaHeight;
-
-      handleHit(playerIndex, lane, hitZoneTop, hitZoneBottom);
+      // Any visible circle can be hit
+      handleHit(playerIndex, lane, 0, areaHeight);
     },
     [state.isGameOver, areaHeight, handleHit]
   );
@@ -145,9 +143,6 @@ export function TwoPlayerGameArea({ onGameOver }: TwoPlayerGameAreaProps) {
           <Lane key={i} position={pos} />
         ))}
 
-        {/* Hit zone indicator */}
-        <div className={styles.hitZone} style={{ height: HIT_ZONE_HEIGHT }} />
-
         {/* Falling circles */}
         {state.players[1].circles.map((circle) => (
           <FallingCircle key={circle.id} y={circle.y} lane={circle.lane} />
@@ -174,9 +169,6 @@ export function TwoPlayerGameArea({ onGameOver }: TwoPlayerGameAreaProps) {
         {LANE_POSITIONS.map((pos, i) => (
           <Lane key={i} position={pos} />
         ))}
-
-        {/* Hit zone indicator */}
-        <div className={styles.hitZone} style={{ height: HIT_ZONE_HEIGHT }} />
 
         {/* Falling circles */}
         {state.players[0].circles.map((circle) => (

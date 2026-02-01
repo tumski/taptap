@@ -65,21 +65,27 @@ export function checkMissedCircles(
 export function checkHit(
   circles: Circle[],
   lane: number,
-  hitZoneTop: number,
-  hitZoneBottom: number
+  _hitZoneTop: number,
+  areaHeight: number
 ): { hit: boolean; remainingCircles: Circle[] } {
-  const circleInHitZone = circles.find(
-    (c) => c.lane === lane && c.y >= hitZoneTop && c.y <= hitZoneBottom
+  // Find all visible circles in this lane (y >= 0 and not past the bottom)
+  const circlesInLane = circles.filter(
+    (c) => c.lane === lane && c.y >= 0 && c.y < areaHeight
   );
 
-  if (circleInHitZone) {
-    return {
-      hit: true,
-      remainingCircles: circles.filter((c) => c.id !== circleInHitZone.id),
-    };
+  if (circlesInLane.length === 0) {
+    return { hit: false, remainingCircles: circles };
   }
 
-  return { hit: false, remainingCircles: circles };
+  // Hit the circle closest to the bottom (most progressed)
+  const circleToHit = circlesInLane.reduce((closest, current) =>
+    current.y > closest.y ? current : closest
+  );
+
+  return {
+    hit: true,
+    remainingCircles: circles.filter((c) => c.id !== circleToHit.id),
+  };
 }
 
 export function createInitialPlayerState(): PlayerState {
