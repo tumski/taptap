@@ -96,8 +96,9 @@ export function TwoPlayerGameArea({ onGameOver }: TwoPlayerGameAreaProps) {
   const onPointerDown2 = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     const rect = e.currentTarget.getBoundingClientRect();
-    const tapX = e.clientX - rect.left;
-    const tapY = e.clientY - rect.top;
+    // Player 2's area is rotated 180°, so we need to invert the coordinates
+    const tapX = rect.width - (e.clientX - rect.left);
+    const tapY = rect.height - (e.clientY - rect.top);
     handleTapRef2.current(tapX, tapY);
   }, []);
 
