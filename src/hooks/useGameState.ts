@@ -1,6 +1,6 @@
 import { useReducer, useCallback } from 'react';
 import type { GameState, PlayerState } from '../types/game';
-import { LIVES } from '../utils/constants';
+import { LIVES, CIRCLE_SIZE } from '../utils/constants';
 import {
   spawnCircle,
   updateCirclePositions,
@@ -14,7 +14,7 @@ type GameAction =
   | { type: 'START_GAME'; playerCount: number }
   | { type: 'UPDATE'; deltaTime: number; areaHeight: number }
   | { type: 'SPAWN_CIRCLE'; playerIndex: number }
-  | { type: 'HIT'; playerIndex: number; lane: number; hitZoneTop: number; hitZoneBottom: number }
+  | { type: 'HIT'; playerIndex: number; tapX: number; tapY: number; areaWidth: number; areaHeight: number }
   | { type: 'GAME_OVER'; winner?: number };
 
 function createInitialState(playerCount: number): GameState {
@@ -129,9 +129,11 @@ function gameReducer(state: GameState, action: GameAction): GameState {
       const player = state.players[action.playerIndex];
       const { hit, remainingCircles } = checkHit(
         player.circles,
-        action.lane,
-        action.hitZoneTop,
-        action.hitZoneBottom
+        action.tapX,
+        action.tapY,
+        action.areaWidth,
+        action.areaHeight,
+        CIRCLE_SIZE
       );
 
       if (!hit) return state;
@@ -185,8 +187,8 @@ export function useGameState(playerCount: number) {
   }, []);
 
   const handleHit = useCallback(
-    (playerIndex: number, lane: number, hitZoneTop: number, hitZoneBottom: number) => {
-      dispatch({ type: 'HIT', playerIndex, lane, hitZoneTop, hitZoneBottom });
+    (playerIndex: number, tapX: number, tapY: number, areaWidth: number, areaHeight: number) => {
+      dispatch({ type: 'HIT', playerIndex, tapX, tapY, areaWidth, areaHeight });
     },
     []
   );

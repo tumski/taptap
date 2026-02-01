@@ -5,7 +5,6 @@ import { LivesDisplay } from './LivesDisplay';
 import { ScoreDisplay } from './ScoreDisplay';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { useGameState } from '../../hooks/useGameState';
-import { useTouchHandler } from '../../hooks/useTouchHandler';
 import { LANE_POSITIONS } from '../../utils/constants';
 import styles from './GameArea.module.css';
 
@@ -17,20 +16,22 @@ export function GameArea({ onGameOver }: GameAreaProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const lastSpawnRef = useRef<number>(Date.now());
   const [areaHeight, setAreaHeight] = useState(0);
+  const [areaWidth, setAreaWidth] = useState(0);
   const [tapFeedback, setTapFeedback] = useState<{ x: number; y: number; id: number } | null>(null);
   const tapIdRef = useRef(0);
 
   const { state, startGame, update, spawnCircle, handleHit } = useGameState(1);
 
-  // Measure container height
+  // Measure container dimensions
   useEffect(() => {
     if (containerRef.current) {
-      const updateHeight = () => {
+      const updateDimensions = () => {
         setAreaHeight(containerRef.current?.clientHeight || 0);
+        setAreaWidth(containerRef.current?.clientWidth || 0);
       };
-      updateHeight();
-      window.addEventListener('resize', updateHeight);
-      return () => window.removeEventListener('resize', updateHeight);
+      updateDimensions();
+      window.addEventListener('resize', updateDimensions);
+      return () => window.removeEventListener('resize', updateDimensions);
     }
   }, []);
 
@@ -65,26 +66,31 @@ export function GameArea({ onGameOver }: GameAreaProps) {
     }
   }, [state.isGameOver, state.players, onGameOver]);
 
-  // Handle lane tap
-  const onLaneTap = useCallback(
-    (lane: number) => {
-      if (state.isGameOver || areaHeight === 0) return;
+  // Store latest handler logic in a ref (always up-to-date, avoids stale closures)
+  const handleTapRef = useRef<(tapX: number, tapY: number) => void>(() => {});
+  handleTapRef.current = (tapX: number, tapY: number) => {
+    if (state.isGameOver || areaHeight === 0 || areaWidth === 0) return;
 
-      // Pass 0 as hitZoneTop (any visible circle can be hit) and areaHeight as the boundary
-      handleHit(0, lane, 0, areaHeight);
+    // Pass actual tap coordinates for precise hit detection
+    handleHit(0, tapX, tapY, areaWidth, areaHeight);
 
-      // Show tap feedback at tap location
-      const x = LANE_POSITIONS[lane] * 100;
-      const id = ++tapIdRef.current;
-      setTapFeedback({ x, y: areaHeight * 0.7, id });
-      setTimeout(() => {
-        setTapFeedback((prev) => (prev?.id === id ? null : prev));
-      }, 200);
-    },
-    [state.isGameOver, areaHeight, handleHit]
-  );
+    // Show tap feedback at tap location
+    const xPercent = (tapX / areaWidth) * 100;
+    const id = ++tapIdRef.current;
+    setTapFeedback({ x: xPercent, y: tapY, id });
+    setTimeout(() => {
+      setTapFeedback((prev) => (prev?.id === id ? null : prev));
+    }, 200);
+  };
 
-  const { handlers } = useTouchHandler({ onLaneTap });
+  // Stable event handler (never changes, avoids re-attachment issues)
+  const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const tapX = e.clientX - rect.left;
+    const tapY = e.clientY - rect.top;
+    handleTapRef.current(tapX, tapY);
+  }, []);
 
   const player = state.players[0];
 
@@ -92,7 +98,7 @@ export function GameArea({ onGameOver }: GameAreaProps) {
     <div
       ref={containerRef}
       className={styles.container}
-      {...handlers}
+      onPointerDown={onPointerDown}
     >
       {/* Lane guides */}
       {LANE_POSITIONS.map((pos, i) => (

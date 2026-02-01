@@ -5,6 +5,7 @@ import {
   SPAWN_INTERVAL_DECREASE,
   INITIAL_SPEED,
   SPEED_INCREMENT,
+  LANE_POSITIONS,
 } from './constants';
 
 let circleIdCounter = 0;
@@ -64,27 +65,48 @@ export function checkMissedCircles(
 
 export function checkHit(
   circles: Circle[],
-  lane: number,
-  _hitZoneTop: number,
-  areaHeight: number
+  tapX: number,
+  tapY: number,
+  areaWidth: number,
+  _areaHeight: number,
+  circleSize: number
 ): { hit: boolean; remainingCircles: Circle[] } {
-  // Find all visible circles in this lane (y >= 0 and not past the bottom)
-  const circlesInLane = circles.filter(
-    (c) => c.lane === lane && c.y >= 0 && c.y < areaHeight
-  );
+  // Find the circle that was actually tapped (tap coordinates within circle bounds)
+  let hitCircle: Circle | null = null;
 
-  if (circlesInLane.length === 0) {
+  for (const circle of circles) {
+    // Circle center X position in pixels
+    const circleCenterX = LANE_POSITIONS[circle.lane] * areaWidth;
+    // Circle Y spans from circle.y (top) to circle.y + circleSize (bottom)
+    const circleTop = circle.y;
+    const circleBottom = circle.y + circleSize;
+
+    // Check if tap is within circle bounds
+    const withinX = Math.abs(tapX - circleCenterX) <= circleSize / 2;
+    const withinY = tapY >= circleTop && tapY <= circleBottom;
+
+    if (withinX && withinY) {
+      // If multiple circles overlap, hit the one closest to tap point
+      if (!hitCircle) {
+        hitCircle = circle;
+      } else {
+        // Prefer the circle whose center is closer to the tap
+        const currentDist = Math.abs(tapY - (circle.y + circleSize / 2));
+        const hitDist = Math.abs(tapY - (hitCircle.y + circleSize / 2));
+        if (currentDist < hitDist) {
+          hitCircle = circle;
+        }
+      }
+    }
+  }
+
+  if (!hitCircle) {
     return { hit: false, remainingCircles: circles };
   }
 
-  // Hit the circle closest to the bottom (most progressed)
-  const circleToHit = circlesInLane.reduce((closest, current) =>
-    current.y > closest.y ? current : closest
-  );
-
   return {
     hit: true,
-    remainingCircles: circles.filter((c) => c.id !== circleToHit.id),
+    remainingCircles: circles.filter((c) => c.id !== hitCircle!.id),
   };
 }
 

@@ -17,19 +17,21 @@ export function TwoPlayerGameArea({ onGameOver }: TwoPlayerGameAreaProps) {
   const player2Ref = useRef<HTMLDivElement>(null);
   const lastSpawnRef = useRef<{ [key: number]: number }>({ 0: Date.now(), 1: Date.now() });
   const [areaHeight, setAreaHeight] = useState(0);
+  const [areaWidth, setAreaWidth] = useState(0);
 
   const { state, startGame, update, spawnCircle, handleHit } = useGameState(2);
 
-  // Measure container height (half of screen for each player)
+  // Measure container dimensions (half of screen for each player)
   useEffect(() => {
-    const updateHeight = () => {
+    const updateDimensions = () => {
       if (player1Ref.current) {
         setAreaHeight(player1Ref.current.clientHeight);
+        setAreaWidth(player1Ref.current.clientWidth);
       }
     };
-    updateHeight();
-    window.addEventListener('resize', updateHeight);
-    return () => window.removeEventListener('resize', updateHeight);
+    updateDimensions();
+    window.addEventListener('resize', updateDimensions);
+    return () => window.removeEventListener('resize', updateDimensions);
   }, []);
 
   // Start game on mount
@@ -68,66 +70,36 @@ export function TwoPlayerGameArea({ onGameOver }: TwoPlayerGameAreaProps) {
     }
   }, [state.isGameOver, state.players, state.winner, onGameOver]);
 
-  // Handle tap for a specific player
-  const handlePlayerTap = useCallback(
-    (playerIndex: number, clientX: number, containerRect: DOMRect) => {
-      if (state.isGameOver || areaHeight === 0) return;
+  // Store latest handler logic in refs (always up-to-date, avoids stale closures)
+  const handleTapRef1 = useRef<(tapX: number, tapY: number) => void>(() => {});
+  const handleTapRef2 = useRef<(tapX: number, tapY: number) => void>(() => {});
 
-      const relativeX = (clientX - containerRect.left) / containerRect.width;
-      const lane = relativeX < 0.5 ? 0 : 1;
+  handleTapRef1.current = (tapX: number, tapY: number) => {
+    if (state.isGameOver || areaHeight === 0 || areaWidth === 0) return;
+    handleHit(0, tapX, tapY, areaWidth, areaHeight);
+  };
 
-      // Any visible circle can be hit
-      handleHit(playerIndex, lane, 0, areaHeight);
-    },
-    [state.isGameOver, areaHeight, handleHit]
-  );
+  handleTapRef2.current = (tapX: number, tapY: number) => {
+    if (state.isGameOver || areaHeight === 0 || areaWidth === 0) return;
+    handleHit(1, tapX, tapY, areaWidth, areaHeight);
+  };
 
-  // Touch handlers
-  const handleTouchStart1 = useCallback(
-    (e: React.TouchEvent) => {
-      e.preventDefault();
-      if (!player1Ref.current) return;
-      const rect = player1Ref.current.getBoundingClientRect();
-      for (let i = 0; i < e.touches.length; i++) {
-        const touch = e.touches[i];
-        if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-          handlePlayerTap(0, touch.clientX, rect);
-        }
-      }
-    },
-    [handlePlayerTap]
-  );
+  // Stable event handlers (never change, avoids re-attachment issues)
+  const onPointerDown1 = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const tapX = e.clientX - rect.left;
+    const tapY = e.clientY - rect.top;
+    handleTapRef1.current(tapX, tapY);
+  }, []);
 
-  const handleTouchStart2 = useCallback(
-    (e: React.TouchEvent) => {
-      e.preventDefault();
-      if (!player2Ref.current) return;
-      const rect = player2Ref.current.getBoundingClientRect();
-      for (let i = 0; i < e.touches.length; i++) {
-        const touch = e.touches[i];
-        if (touch.clientY >= rect.top && touch.clientY <= rect.bottom) {
-          handlePlayerTap(1, touch.clientX, rect);
-        }
-      }
-    },
-    [handlePlayerTap]
-  );
-
-  const handleMouseDown1 = useCallback(
-    (e: React.MouseEvent) => {
-      if (!player1Ref.current) return;
-      handlePlayerTap(0, e.clientX, player1Ref.current.getBoundingClientRect());
-    },
-    [handlePlayerTap]
-  );
-
-  const handleMouseDown2 = useCallback(
-    (e: React.MouseEvent) => {
-      if (!player2Ref.current) return;
-      handlePlayerTap(1, e.clientX, player2Ref.current.getBoundingClientRect());
-    },
-    [handlePlayerTap]
-  );
+  const onPointerDown2 = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const tapX = e.clientX - rect.left;
+    const tapY = e.clientY - rect.top;
+    handleTapRef2.current(tapX, tapY);
+  }, []);
 
   return (
     <div className={styles.container}>
@@ -135,8 +107,7 @@ export function TwoPlayerGameArea({ onGameOver }: TwoPlayerGameAreaProps) {
       <div
         ref={player2Ref}
         className={`${styles.playerArea} ${styles.player2}`}
-        onTouchStart={handleTouchStart2}
-        onMouseDown={handleMouseDown2}
+        onPointerDown={onPointerDown2}
       >
         {/* Lane guides */}
         {LANE_POSITIONS.map((pos, i) => (
@@ -162,8 +133,7 @@ export function TwoPlayerGameArea({ onGameOver }: TwoPlayerGameAreaProps) {
       <div
         ref={player1Ref}
         className={`${styles.playerArea} ${styles.player1}`}
-        onTouchStart={handleTouchStart1}
-        onMouseDown={handleMouseDown1}
+        onPointerDown={onPointerDown1}
       >
         {/* Lane guides */}
         {LANE_POSITIONS.map((pos, i) => (
