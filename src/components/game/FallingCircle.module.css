@@ -1,0 +1,7 @@
+.circle {
+  position: absolute;
+  background-color: #1a1a1a;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}

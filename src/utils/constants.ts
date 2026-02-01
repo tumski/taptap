@@ -1,0 +1,9 @@
+export const INITIAL_SPEED = 200; // pixels per second
+export const SPEED_INCREMENT = 10; // increase per second
+export const SPAWN_INTERVAL_INITIAL = 1500; // ms between spawns
+export const SPAWN_INTERVAL_MIN = 500; // minimum spawn interval
+export const SPAWN_INTERVAL_DECREASE = 50; // ms decrease per second
+export const CIRCLE_SIZE = 60; // pixels
+export const LIVES = 3;
+export const HIT_ZONE_HEIGHT = 120; // pixels from bottom where taps register
+export const LANE_POSITIONS = [0.25, 0.75]; // x positions as percentage of width

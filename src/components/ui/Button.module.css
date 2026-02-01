@@ -1,0 +1,35 @@
+.button {
+  font-family: 'Caveat', cursive;
+  font-size: 2rem;
+  padding: 1rem 3rem;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.button:active {
+  transform: scale(0.95);
+}
+
+.primary {
+  background-color: #1a1a1a;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.primary:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.secondary {
+  background-color: white;
+  color: #1a1a1a;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.secondary:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+}
