@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { WelcomeScreen } from './components/screens/WelcomeScreen';
 import { PlayerSelectScreen } from './components/screens/PlayerSelectScreen';
 import { CountdownScreen } from './components/screens/CountdownScreen';
@@ -63,6 +64,7 @@ function App() {
           onRestart={handleRestart}
         />
       )}
+      <Analytics />
     </div>
   );
 }
